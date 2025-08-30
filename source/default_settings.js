@@ -31,6 +31,9 @@ module.exports = {
 	username: null,
 	api_key: null,
 
+	deviantart_client_id: "53923",
+	deviantart_client_secret: "0370aec7ea4a2f193f50e8de46fb6d77",
+
 	// Defaults for how the post bvaser should operate
 	postbvas_edit_description: true,
 	postbvas_post_comment: false,

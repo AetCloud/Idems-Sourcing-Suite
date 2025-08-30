@@ -4,10 +4,12 @@ module.exports = {
 		return this_url === 'deviantart.com';
 	},
 
-	match: ['*://*.deviantart.com/*'],
+	match: [
+        '*://*.deviantart.com/*'
+    ],
 
-	connect: ['wixmp.com'],
+	connect: ['wixmp.com', 'www.deviantart.com'],
 
 	title: 'DeviantArt',
-	version: 6
+	version: 8 // Incremented version
 };

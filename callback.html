@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Idem's Sourcing Suite - DA Auth</title>
+    <script>
+        // This script runs when DeviantArt redirects back to this page.
+        // It grabs the authorization code from the URL.
+        const code = new URLSearchParams(window.location.search).get('code');
+
+        // It then saves the code in the browser's local storage.
+        if (code) {
+            localStorage.setItem('deviantart_auth_code', code);
+            document.getElementById('message').textContent = 'Authorization successful! You can close this tab and return to DeviantArt.';
+        } else {
+            document.getElementById('message').textContent = 'Error: Authorization code not found.';
+        }
+
+        // The tab can be closed.
+        window.close();
+    </script>
+</head>
+<body>
+    <p id="message">Processing authorization...</p>
+</body>
+</html>

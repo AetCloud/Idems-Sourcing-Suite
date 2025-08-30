@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Idem's Sourcing Suite - Dev
 // @description  Adds a whole bunch of utilities, helpful for sourcing images
-// @version      1.00053
+// @version      1.00055
 // @author       Meras
 
 // @namespace    https://github.com/Sasquire/
@@ -28,9 +28,10 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addElement
 
-//               DeviantArt v6
+//               DeviantArt v8
 // @match        *://*.deviantart.com/*
 // @connect      wixmp.com
+// @connect      www.deviantart.com
 
 //               FurAffinity v5
 // @match        *://*.furaffinity.net/view/*

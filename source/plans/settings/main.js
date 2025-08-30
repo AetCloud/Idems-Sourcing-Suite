@@ -8,8 +8,41 @@ function exec () {
 	on_site_hasher_settings();
 	image_compare_settings();
 	post_bvas_settings();
+	deviantart_api_settings(); // --- ADDED ---
 	add_credentials_listener();
 }
+
+// --- START: ADDED CODE ---
+function deviantart_api_settings () {
+	const settings = new Settings({
+		name: 'DeviantArt API Credentials',
+		description: 'Credentials for the official DeviantArt API. Required for the DeviantArt plan.'
+	});
+
+	settings.custom({
+		name: 'Client ID',
+		key: 'deviantart_client_id',
+		default: defaults.deviantart_client_id,
+		description: 'Your DeviantArt application Client ID.',
+		is_secret: false
+	});
+
+	settings.custom({
+		name: 'Client Secret',
+		key: 'deviantart_client_secret',
+		default: defaults.deviantart_client_secret,
+		description: 'Your DeviantArt application Client Secret.',
+		is_secret: true
+	});
+
+    settings.button({
+        name: 'Update DeviantArt Credentials',
+        id: 'update_deviantart_credentials_button',
+        value: 'Update',
+        description: 'Saves your DeviantArt Client ID and Secret.'
+    });
+}
+// --- END: ADDED CODE ---
 
 function on_site_hasher_settings () {
 	const settings = new Settings({
@@ -123,6 +156,15 @@ function add_credentials_listener () {
 		await set_value('username', username);
 		await set_value('api_key', api_key);
 	});
+
+    // Note: It's cleaner to have a separate listener for the new button
+    document.getElementById('update_deviantart_credentials_button').addEventListener('click', async e => {
+        const client_id = document.querySelector('input[data-key="deviantart_client_id"]').value;
+        const client_secret = document.querySelector('input[data-key="deviantart_client_secret"]').value;
+        await set_value('deviantart_client_id', client_id);
+        await set_value('deviantart_client_secret', client_secret);
+        alert('DeviantArt credentials saved!');
+    });
 }
 
 module.exports = {
