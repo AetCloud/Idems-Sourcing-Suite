@@ -1,161 +1,164 @@
 const { remove_node, simple_site, append } = require('./../../utils/utils.js');
 const header = require('./header.js');
 
-// Twitter actually has a different site for people not logged in
-// There *should* be a case where this is handled, but I am just going
-// to leave that out and hope that twitter will force the new site
-// design on everyone soon. Worst case, users of this can simply
-// make a twitter account for this to work. (I'm sorry this is a bad solution)
+// This function will run when a tweet is detected on the page.
+async function run_tweet_logic() {
+    // --- Determine Context: Are we in the main view or the photo viewer? ---
+    const photo_dialog = document.querySelector('div[role="dialog"]');
+    let tweet_article;
 
-async function photo_hashes () {
-	const info = await build_info();
+    if (photo_dialog) {
+        // In photo view, the relevant tweet is inside the sidebar of the dialog
+        tweet_article = await photo_dialog.arrive('article[data-testid="tweet"]');
+    } else {
+        // In main view, it's in the primary content column
+        const primaryColumn = await document.body.arrive('[data-testid="primaryColumn"]');
+        tweet_article = await primaryColumn.arrive('article[data-testid="tweet"]');
+    }
 
-	// Because of the async nature of stuff, a user might
-	// have gone through things rather quickly. This will
-	// make sure that there is always a clean slate
-	clear_all_setup();
+    if (!tweet_article) {
+        console.log('ISS (Twitter): Could not find the main tweet article. Stopping.');
+        return;
+    }
 
-	const quick_buttons = document.querySelector('[aria-label$=Reply]')
-		.parentNode
-		.parentNode;
-	quick_buttons.querySelector('div ~ div ~ div ~ div').style.flexGrow = 1;
+    // --- 1. Find the necessary elements within the correct context ---
+    const user_info_element = tweet_article.querySelector('[data-testid="User-Name"]');
+    if (!user_info_element) {
+        console.log('ISS (Twitter): Could not find User-Name element. Stopping.');
+        return;
+    }
+    
+    const artist_element = {
+        href: user_info_element.querySelector('a[role="link"]').href,
+        textContent: user_info_element.querySelector('span > span').textContent
+    };
 
-	append(quick_buttons, info.upload);
-	append(document.body, info.hashes);
-	// I can not get the button when pressed to copy the description
-	// append(quick_buttons, info.description);
+    const description_element = tweet_article.querySelector('[data-testid="tweetText"]');
+    const time_element = tweet_article.querySelector('time');
+    
+    // The image will always be in the dialog if it's open
+    const image_element = photo_dialog 
+        ? photo_dialog.querySelector('img[src*="pbs.twimg.com"]')
+        : tweet_article.querySelector('[data-testid="tweetPhoto"] img');
+
+    if (!image_element) {
+        console.log('ISS (Twitter): No image found. Stopping.');
+        return;
+    }
+
+    // --- 2. Extract and format the data ---
+    const year = new Date(time_element.dateTime).getFullYear().toString();
+    const sources = produce_sources(image_element.src);
+    const info = await simple_site({
+        artist: artist_element,
+        title: null,
+        description: description_element,
+        year: year,
+        full_url: sources[0][0],
+        full_url_name: 'orig',
+        hashes: sources.slice(1),
+        css: `
+            #iss_hashes {
+                position: fixed; top: 0px; left: 0px; z-index: 3000; display: flex;
+                width: 100%; background-color: #000c; padding: 4px;
+                flex-wrap: wrap; gap: 10px; justify-content: center; color: white;
+            }
+            .iss_hash_span { margin: auto; }
+            .iss_image_link { margin-right: 0.5rem; color: #71767b !important; }
+
+            /* Styles for sidebar integration */
+            #iss_button_container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+                border-top: 1px solid rgb(47, 51, 54);
+                padding-top: 12px;
+            }
+            #iss_upload_link, #iss_artist_commentary {
+                color: #71767b; text-decoration: none; font-size: 14px;
+                padding: 8px; border-radius: 16px; text-align: center;
+                border: 1px solid rgb(83, 100, 113);
+                background-color: transparent;
+                cursor: pointer;
+            }
+             #iss_upload_link:hover, #iss_artist_commentary:hover {
+                background-color: rgba(239, 243, 244, 0.1);
+            }
+        `,
+        hashes_as_array: false
+    });
+
+    // --- 3. Add the UI elements to the page ---
+    clear_all_setup();
+
+    const ui_anchor = tweet_article.querySelector('[data-testid="tweetText"]');
+
+    if (ui_anchor) {
+        const button_container = document.createElement('div');
+        button_container.id = 'iss_button_container';
+        
+        append(button_container, info.upload);
+        append(button_container, info.description);
+        
+        ui_anchor.parentElement.insertBefore(button_container, ui_anchor.nextSibling);
+    } else {
+        console.log('ISS (Twitter): Could not find the tweet text to attach buttons.');
+    }
+
+    // Only show hashes when the photo viewer is open.
+    if (photo_dialog) {
+        append(document.body, info.hashes);
+    }
 }
 
-function exec () {
-	find_site();
-	window.addEventListener('locationchange', find_site);
+// Generates different quality versions of the image URL.
+function produce_sources(starting_url) {
+    const base_url = new URL(starting_url);
+    const format = base_url.searchParams.get('format') || 'jpg';
+    
+    const clean_url_base = `${base_url.origin}${base_url.pathname}.${format}`;
+    return [
+        [`${clean_url_base}?name=orig`, 'orig'],
+        [`${clean_url_base}?name=4096x4096`, '4096'],
+        [`${clean_url_base}?name=large`, 'large']
+    ];
 }
 
-async function get_sources () {
-	const image_node = await (async () => {
-		// Apparently some posts will be weird and not have a single ul element
-		// on the page at all. Here is an example link that showcases this behavior.
-		// No idea how well this will hold up in the future with changes to twitter,
-		// but on the two test cases I tried, it worked!
-		// https://twitter.com/xzorgothoth/status/1376220068711923720
-		if (document.querySelector('ul') === null) {
-			const image_node = await document.getElementById('react-root').arrive('div[role=dialog] img');
-			document.getElementById('react-root').forget_arrives();
-			return image_node;
-		} else {
-			const image_id = parseInt((/\d+$/).exec(window.location.href)[0], 10);
-			const list_elems = new Array(image_id).fill('li').join(' ~ ');
-			const query = `ul[role=list] > ${list_elems} img`;
+// Checks the URL to decide if the script should run.
+function find_site() {
+    const tweet_regex = /^\/[A-z0-9_]+\/status\/\d+/;
+    const here = new URL(window.location.href);
 
-			// The structure for displaying multiple images and single
-			// images is different. This attempt to find each style and
-			// then return the first one that is found. The other's event
-			// listeners are then discarded and those promises are left
-			// never resolving. Perhaps this is not the best idea.
-			const image_node = await Promise.race([
-				// Specific image
-				document.getElementById('react-root').arrive(query),
-
-				// Single image
-				document.getElementById('react-root').arrive('div > div > div > div > div > img[alt=Image]')
-			]);
-			document.getElementById('react-root').forget_arrives();
-			return image_node;
-		}
-	})();
-	const all_sources = produce_sources(image_node.src);
-	return all_sources;
+    if (tweet_regex.test(here.pathname)) {
+        console.log('ISS: Twitter status URL detected');
+        // A short delay helps ensure the tweet content is fully loaded.
+        setTimeout(run_tweet_logic, 500);
+    }
 }
 
-function produce_sources (starting_url) {
-	return [
-		[url_type('orig'), 'full '],
-		[url_type('4096x4096'), '4096 '],
-		[url_type('large'), 'large ']
-	];
-
-	function url_type (new_type) {
-		const url = new URL(starting_url);
-		url.searchParams.set('name', new_type);
-		return url.href;
-	}
+// Removes old UI elements to prevent duplication.
+function clear_all_setup() {
+    remove_node(document.getElementById('iss_hashes'));
+    const old_container = document.querySelector('#iss_button_container');
+    if (old_container) remove_node(old_container);
 }
 
-function find_site () {
-	const status = /^\/[A-z0-9_]+\/status\/\d+$/;
-	const photo = /^\/[A-z0-9_]+\/status\/\d+\/photo\/\d$/;
+// Main Execution
+function exec() {
+    // Initial run when the page loads.
+    find_site();
+    // Re-run whenever the URL changes (for single-page app navigation).
+    window.addEventListener('locationchange', find_site);
 
-	clear_all_setup();
-
-	const here = new URL(window.location.href);
-	if (status.test(here.pathname)) {
-		console.log('ISS: Status URL detected');
-		// links to upload all images
-		// copy description
-	} else if (photo.test(here.pathname)) {
-		console.log('ISS: Photo URL detected');
-		photo_hashes();
-	}
+    // Set up a listener that watches the entire page for changes.
+    // This is how we'll know when the photo viewer opens or closes.
+    const observer = new MutationObserver(() => find_site());
+    observer.observe(document.body, { childList: true, subtree: true });
 }
-
-function clear_all_setup () {
-	remove_node(document.getElementById('iss_hashes'));
-	remove_node(document.getElementById('iss_upload_link'));
-}
-
-async function build_info () {
-	const artist = await document.body.arrive('[data-testid=tweet] [dir=ltr] > span');
-	// This should always be present if using the site normally
-	// when launched from a  direct photo url, the top tweet
-	// isn't actually present! This causes some problems, so saying
-	// it is empty is a lot better
-
-	// Pray that twitter doesn't change this, yet again, so I don't have the whole thing break.
-	const description = document.querySelector('[data-testid=tweet] > div > div > div > div ~ div ~ div [dir=auto]');
-	const sources = await get_sources();
-	// TODO: Clean this query up
-	// TODO: Write to twitter to clean their site up
-	const date = await document.body.arrive(`[data-testid=tweet] > div > div > div > div ~ div ~ div a[href="${window.location.pathname.split('/').splice(0, 4).join('/')}"`);
-	const year = date.textContent.slice(-4);
-
-	return get_info({
-		artist: artist,
-		description: description,
-		year: year,
-		sources: sources
-	});
-}
-
-const get_info = async (pre_found) => simple_site({
-	artist: pre_found.artist,
-	title: null, // No titles on twitter
-	description: pre_found.description,
-	year: pre_found.year,
-	full_url: pre_found.sources[0][0],
-	full_url_name: 'orig',
-	hashes: pre_found.sources.slice(1),
-	css: `
-		#iss_hashes {
-			position: fixed;
-			top: 0px;
-			z-index: 3000;
-			display: flex;
-			width: 100%;
-			background-color: #0006;
-			flex-wrap: wrap;
-		}
-		.iss_hash_span { margin: auto; }
-		.iss_image_link { margin-right: 0.2rem; }
-
-		#iss_upload_link {
-			color: white;
-			margin: auto;
-		}
-	`,
-	hashes_as_array: false
-});
 
 module.exports = {
-	...header,
-	exec: exec
+    ...header,
+    exec: exec
 };
+

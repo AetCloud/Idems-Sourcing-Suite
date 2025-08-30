@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Idem's Sourcing Suite
+// @name         Idem's Sourcing Suite - Dev
 // @description  Adds a whole bunch of utilities, helpful for sourcing images
 // @version      1.00053
 // @author       Meras
@@ -65,6 +65,7 @@
 
 //               Twitter v3
 // @match        *://*.twitter.com/*
+// @match        *://*.x.com/*
 // @connect      pbs.twimg.com
 
 //               Weasyl v1

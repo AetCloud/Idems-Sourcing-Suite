@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Idem's Sourcing Suite
+// @name         Idem's Sourcing Suite - Dev
 // @description  Adds a whole bunch of utilities, helpful for sourcing images
 // @version      1.00053
 // @author       Meras
@@ -65,6 +65,7 @@
 
 //               Twitter v3
 // @match        *://*.twitter.com/*
+// @match        *://*.x.com/*
 // @connect      pbs.twimg.com
 
 //               Weasyl v1
@@ -1679,7 +1680,6 @@ function validate_boolean (boolean, name) {
 /***/ })
 
 /******/ })["default"];
-
 },{}],3:[function(require,module,exports){
 ((base_html, base_css, GM) => {
 	function do_constructor (options) {
@@ -2561,10 +2561,10 @@ module.exports = {
 };
 
 },{}],10:[function(require,module,exports){
-module.exports = ":root {\n\t--background-blue: #031131;\n\t--home-blue: #012e56;\n\t--standard-blue: #152f56;\n\t--comment-blue: #213a5f;\n\t--quote-blue: #284a81;\n\t--link-blue: #b4c7d9;\n\t--hover-blue: #2e76b4;\n\n\t--other-blue: #174891;\n\n\t--yellow: #fdba31;\n\t--light-yellow: #ffde9b;\n\t--dark-yellow: #d8b162;\n}\n.hidden { display:none; }\n\nbody {\n\tbackground-color: var(--background-blue);\n\tcolor: #ccc;\n}\n\n#messages {\n\theight: 5rem;\n\toverflow-y: scroll;\n\tdisplay: flex;\n\tflex-direction: column;\n}";
+module.exports = ":root {\r\n\t--background-blue: #031131;\r\n\t--home-blue: #012e56;\r\n\t--standard-blue: #152f56;\r\n\t--comment-blue: #213a5f;\r\n\t--quote-blue: #284a81;\r\n\t--link-blue: #b4c7d9;\r\n\t--hover-blue: #2e76b4;\r\n\r\n\t--other-blue: #174891;\r\n\r\n\t--yellow: #fdba31;\r\n\t--light-yellow: #ffde9b;\r\n\t--dark-yellow: #d8b162;\r\n}\r\n.hidden { display:none; }\r\n\r\nbody {\r\n\tbackground-color: var(--background-blue);\r\n\tcolor: #ccc;\r\n}\r\n\r\n#messages {\r\n\theight: 5rem;\r\n\toverflow-y: scroll;\r\n\tdisplay: flex;\r\n\tflex-direction: column;\r\n}";
 
 },{}],11:[function(require,module,exports){
-module.exports = "<div id=\"main\">\n\t<div id=\"messages\">\n\t\t<span>Logging information should appear here<span>\n\t</div>\n\t<hr>\n\t<div id=\"old_post\">\n\t\t<input id=\"old_post_id\" placeholder=\"old post #\"></input>\n\t</div>\n\t<div id=\"new_post\">\n\t</div>\n\t<button id=\"bvas_submit\">BVAS post</button>\n</div>\n";
+module.exports = "<div id=\"main\">\r\n\t<div id=\"messages\">\r\n\t\t<span>Logging information should appear here<span>\r\n\t</div>\r\n\t<hr>\r\n\t<div id=\"old_post\">\r\n\t\t<input id=\"old_post_id\" placeholder=\"old post #\"></input>\r\n\t</div>\r\n\t<div id=\"new_post\">\r\n\t</div>\r\n\t<button id=\"bvas_submit\">BVAS post</button>\r\n</div>\r\n";
 
 },{}],12:[function(require,module,exports){
 const {
@@ -3138,7 +3138,8 @@ const { full_to_thumb } = require('./links.js');
 const get_info = async (full_url) => simple_site({
 	artist: {
 		href: document.querySelector('.submission-id-avatar > a').href,
-		textContent: document.querySelector('.submission-id-sub-container a > strong').textContent
+		// This is the corrected line from the GitHub issue
+		textContent: document.querySelector('.submission-id-sub-container a > span').textContent
 	},
 	title: document.querySelector('.submission-title > h2'),
 	description: () => document.querySelector('.submission-description'),
@@ -3161,15 +3162,16 @@ const get_info = async (full_url) => simple_site({
 });
 
 async function exec () {
-	// There seem to be two different display modes for the beta site
-	// This code only works on the wide version because in the thin
-	// view, the place where the container is placed disappears. This
-	// seems like it is only done with css because the node will come
-	// back if the window is stretched to fit again.
+	// Find the download button.
+	const downloadButton = document.querySelector('a.button[href*="d.furaffinity.net/art/"]');
 
-	// It appears that you can only be on the beta site while logged
-	// in. This does not concern me about this node being hidden
-	const full_url = document.querySelector('a.button[href*="d.furaffinity.net/art/"]').href;
+	// If there's no download button, it's not an image submission. Stop here.
+	if (!downloadButton) {
+		console.log("ISS: FurAffinity plan stopping. No image download button found.");
+		return;
+	}
+
+	const full_url = downloadButton.href;
 	const info = await get_info(full_url);
 
 	const container = document.createElement('div');
@@ -3189,6 +3191,7 @@ async function exec () {
 }
 
 module.exports = exec;
+
 
 },{"./../../utils/utils.js":52,"./links.js":20}],23:[function(require,module,exports){
 module.exports = {
@@ -3462,10 +3465,10 @@ module.exports = {
 };
 
 },{}],28:[function(require,module,exports){
-module.exports = ":root {\n\t--background-blue: #031131;\n\t--home-blue: #012e56;\n\t--standard-blue: #152f56;\n\t--comment-blue: #213a5f;\n\t--quote-blue: #284a81;\n\t--link-blue: #b4c7d9;\n\t--hover-blue: #2e76b4;\n\n\t--other-blue: #174891;\n\n\t--yellow: #fdba31;\n\t--light-yellow: #ffde9b;\n\t--dark-yellow: #d8b162;\n}\n\nbody {\n\tbackground-color: var(--background-blue);\n\tbackground-image: url(https://e621.net/images/stripe.png);\n}\n\ncanvas {\n\tborder: 5px dashed var(--quote-blue);\n}\n\n#c1, #c2 {\n\tmax-width: 400px;\n\tmax-height: 400px;\n}\n\n#input {\n\tdisplay: grid;\n\tgrid-template-columns: auto auto;\n\tgrid-gap: 5px;\n\tflex-grow: 1;\n}\n\n#control {\n\tflex-grow: 5;\n}\n\n#main {\n\tdisplay: flex;\n}\n\n#messages {\n\tdisplay: flex;\n\tflex-direction: column;\n}\n\nhr,\ninput[type=file],\n#leave_early ~ label,\n#messages {\n\tcolor: #ccc;\n}";
+module.exports = ":root {\r\n\t--background-blue: #031131;\r\n\t--home-blue: #012e56;\r\n\t--standard-blue: #152f56;\r\n\t--comment-blue: #213a5f;\r\n\t--quote-blue: #284a81;\r\n\t--link-blue: #b4c7d9;\r\n\t--hover-blue: #2e76b4;\r\n\r\n\t--other-blue: #174891;\r\n\r\n\t--yellow: #fdba31;\r\n\t--light-yellow: #ffde9b;\r\n\t--dark-yellow: #d8b162;\r\n}\r\n\r\nbody {\r\n\tbackground-color: var(--background-blue);\r\n\tbackground-image: url(https://e621.net/images/stripe.png);\r\n}\r\n\r\ncanvas {\r\n\tborder: 5px dashed var(--quote-blue);\r\n}\r\n\r\n#c1, #c2 {\r\n\tmax-width: 400px;\r\n\tmax-height: 400px;\r\n}\r\n\r\n#input {\r\n\tdisplay: grid;\r\n\tgrid-template-columns: auto auto;\r\n\tgrid-gap: 5px;\r\n\tflex-grow: 1;\r\n}\r\n\r\n#control {\r\n\tflex-grow: 5;\r\n}\r\n\r\n#main {\r\n\tdisplay: flex;\r\n}\r\n\r\n#messages {\r\n\tdisplay: flex;\r\n\tflex-direction: column;\r\n}\r\n\r\nhr,\r\ninput[type=file],\r\n#leave_early ~ label,\r\n#messages {\r\n\tcolor: #ccc;\r\n}";
 
 },{}],29:[function(require,module,exports){
-module.exports = "<div id=\"main\">\n\t<div id=\"control\">\n\t\t<button id=\"compare_button\">Compare images using</button>\n\t\t<select id=\"algorithm_select\" title=\"These are named after the degrees of a polynomial\">\n\t\t\t<option value=\"constant\" title=\"This is what you want\">Constant</option>\n\t\t\t<option value=\"linear\" title=\"absoluteValue of color1 - color2\">Linear</option>\n\t\t\t<option value=\"quadratic\" title=\"(color1 - color2)^2\">Quadratic</option>\n\t\t\t<option value=\"in_first\" title=\"Only pixels that are in the first image\">In First</option>\n\t\t\t<option value=\"in_second\" title=\"Only pixels that are in the second image\">In Second</option>\n\t\t</select>\n\t\t<br>\n\t\t<input type=\"checkbox\" id=\"leave_early\" name=\"leave_early\"></input>\n\t\t<label for=\"leave_early\">Quick Compare</label>\n\t\t<br>\n\t\t<div id=\"messages\">\n\t\t\t<span>Logging information should appear here<span>\n\t\t</div>\n\t</div>\n\t<div id=\"input\">\n\t\t<canvas id=\"c1\"></canvas>\n\t\t<canvas id=\"c2\"></canvas>\n\t</div>\n</div>\n<hr>\n<div>\n\t<canvas id=\"o1\"></canvas>\n</div>";
+module.exports = "<div id=\"main\">\r\n\t<div id=\"control\">\r\n\t\t<button id=\"compare_button\">Compare images using</button>\r\n\t\t<select id=\"algorithm_select\" title=\"These are named after the degrees of a polynomial\">\r\n\t\t\t<option value=\"constant\" title=\"This is what you want\">Constant</option>\r\n\t\t\t<option value=\"linear\" title=\"absoluteValue of color1 - color2\">Linear</option>\r\n\t\t\t<option value=\"quadratic\" title=\"(color1 - color2)^2\">Quadratic</option>\r\n\t\t\t<option value=\"in_first\" title=\"Only pixels that are in the first image\">In First</option>\r\n\t\t\t<option value=\"in_second\" title=\"Only pixels that are in the second image\">In Second</option>\r\n\t\t</select>\r\n\t\t<br>\r\n\t\t<input type=\"checkbox\" id=\"leave_early\" name=\"leave_early\"></input>\r\n\t\t<label for=\"leave_early\">Quick Compare</label>\r\n\t\t<br>\r\n\t\t<div id=\"messages\">\r\n\t\t\t<span>Logging information should appear here<span>\r\n\t\t</div>\r\n\t</div>\r\n\t<div id=\"input\">\r\n\t\t<canvas id=\"c1\"></canvas>\r\n\t\t<canvas id=\"c2\"></canvas>\r\n\t</div>\r\n</div>\r\n<hr>\r\n<div>\r\n\t<canvas id=\"o1\"></canvas>\r\n</div>";
 
 },{}],30:[function(require,module,exports){
 const {
@@ -3768,171 +3771,135 @@ const header = require('./header.js');
 const {
 	artist_commentary,
 	commentary_button,
-	data_to_nodes,
+	data_to_span,
 	common_styles,
 	upload_button,
 	get_value,
-	add_css
+	add_css,
+    remove_node,
+    append
 } = require('./../../utils/utils.js');
 
-function exec () {
-	find_site();
-	common_styles();
-	add_css(`
-		.iss_image_link {
-			color: black !important;
-		}
+// This function will run when the script detects an artwork page.
+async function run_artwork_logic() {
+    clear_all_setup();
 
-		.iss_hashes {
-			display: flex;
-			flex-direction: column;
-		}
-		
-		.iss_hash_span {
-			margin: 0px auto;
-		}
+    // Wait for both the main content AND the sidebar artist link. This prevents race conditions on refresh.
+    const [figcaption, artist_element] = await Promise.all([
+        document.body.arrive('main figure figcaption'),
+        document.body.arrive('aside a[data-gtm-value][href*="/users/"]')
+    ]);
 
-		.iss_image_link {
-			margin-right: 1rem;
-		}
-	`);
+    if (!figcaption || !artist_element) {
+        console.log("ISS (Pixiv): Timed out waiting for essential elements. Stopping.");
+        return;
+    }
+    
+    // Now that we know the core components are loaded, we can safely find the rest.
+    const title_element = figcaption.querySelector('h1');
+    const description_element = figcaption.querySelector('.sc-d4cbc2e2-0'); // The div containing the caption
+    const date_element = figcaption.querySelector('time[datetime]');
+    const ui_anchor = figcaption.querySelector('footer');
 
-	// This whole thing was meant to be setup so
-	// it would work with pixiv's design and will
-	// load the proper things on each page, but this
-	// proved to be too difficult. Commented out code
-	// should be the beginnings of such a system
-	// window.addEventListener('locationchange', find_site);
+    if (!title_element || !date_element || !ui_anchor) {
+        console.log("ISS (Pixiv): Missing elements within the figcaption. Stopping.");
+        return;
+    }
+    
+    const year = new Date(date_element.dateTime).getFullYear().toString();
+    const commentary = artist_commentary(artist_element, title_element, description_element);
+    const sources = get_sources();
+
+    if (sources.length === 0) {
+        console.log("ISS (Pixiv): No image sources found. Stopping.");
+        return;
+    }
+
+    const info = await get_value_object(commentary, artist_element.href, [year], sources);
+
+    const button_container = document.createElement('div');
+    button_container.id = 'iss_button_container';
+    
+    append(button_container, info.upload);
+    append(button_container, info.description);
+    append(button_container, info.hashes);
+
+    ui_anchor.parentElement.insertBefore(button_container, ui_anchor);
 }
 
-function find_site () {
-	const artworks = /^\/[^/]*\/artworks\/\d+$/;
+// Helper to build the object for the UI elements
+async function get_value_object(commentary, artist_url, tags = [], sources) {
+    const on_site_commentary = await get_value('on_site_commentary_enabled');
+    const on_site_upload = await get_value('on_site_upload_enabled');
+    const on_site_hasher = await get_value('on_site_hasher_enabled');
 
-	clear_all_setup();
-
-	const here = new URL(window.location.href);
-	if (artworks.test(here.pathname)) {
-		console.log('ISS: Artwork URL detected');
-		run();
-	}
+    return {
+        description: on_site_commentary ? commentary_button(commentary) : null,
+        upload: on_site_upload ? upload_button(sources[0][0], [window.location.href, sources[0][0], artist_url], commentary, tags) : null,
+        hashes: on_site_hasher ? data_to_span(sources) : null
+    };
 }
 
-function clear_all_setup () {
-	// Todo
+// Finds all image sources.
+function get_sources() {
+    const images = Array.from(document.querySelectorAll('main [role="presentation"] img'));
+    
+    return images.map((img, i) => {
+        // Reconstruct the original image URL from the thumbnail/master URL
+        let hires_url = img.src.replace('i.pximg.net/c/250x250_80_a2/img-master/', 'i.pximg.net/img-original/');
+        hires_url = hires_url.replace(/_master\d+\./, '.').replace(/_square\d+\./,'.');
+        return [hires_url, `Image ${i+1}`];
+    });
 }
 
-// let last_image_url = null;
-async function run () {
-	// Wait for the first image to appear. Make sure it has a different url
-	// const image = await document.body.arrive(`img[srcset]:not([srcset^="${last_image_url}"])`);
-	// await document.body.leave('#\\32 ');
-	// last_image_url = image.srcset;
-
-	await document.body.arrive('[role=presentation] [role=presentation]');
-
-	// Description can always be done
-	conditional_execute('on_site_commentary_enabled', do_commentary);
-
-	// May need to wait for upload links and image hashes
-	if (document.getElementById('1') !== null) {
-		// https://stackoverflow.com/questions/20306204/using-queryselector-with-ids-that-are-numbers
-		await document.body.arrive('#\\32 ');
-	}
-
-	conditional_execute('on_site_upload_enabled', do_upload);
-	conditional_execute('on_site_hasher_enabled', do_md5s);
+// Checks if the current URL is an artwork page.
+function find_site() {
+    const artworks = /^\/en\/artworks\/\d+/;
+    if (artworks.test(window.location.pathname)) {
+        console.log('ISS: Pixiv artwork URL detected');
+        run_artwork_logic();
+    } else {
+        clear_all_setup();
+    }
 }
 
-async function do_md5s () {
-	const images = get_images();
-	for (let i = 0; i < images.length; i++) {
-		const image = images[i];
-		console.log(`ISS: Processing image ${i}`);
-
-		const iss_container = document.createElement('span');
-		iss_container.classList.add('iss_hashes');
-
-		data_to_nodes([
-			[image.best_url, 'Full'],
-			[image.preview_url, 'Preview']
-		]).forEach(p => {
-			iss_container.appendChild(p);
-		});
-
-		image.container.appendChild(iss_container);
-
-		// Wait a whole second so images are complete sequentially
-		// and on large posts with many images, we do not get rate
-		// limited by e621 or from pixiv.
-		await new Promise(resolve => setTimeout(resolve, 1300));
-	}
+// Removes old UI elements.
+function clear_all_setup() {
+    remove_node(document.getElementById('iss_button_container'));
+    remove_node(document.getElementById('iss_hashes'));
 }
 
-function get_description () {
-	return artist_commentary(
-		document.querySelectorAll('a[href^="/en/users"]')[1], // Artist
-		document.getElementsByTagName('h1')[0], // Title
-		document.querySelector('h1 ~ div > div') // Description
-	);
-}
+// Main Execution
+function exec() {
+    common_styles();
+    add_css(`
+        #iss_button_container { margin: 16px 0; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #efefef; padding-top: 16px; }
+        #iss_upload_link, #iss_artist_commentary { color: #333 !important; border: 1px solid #ddd; padding: 8px; border-radius: 8px; text-align: center; cursor: pointer; background: white; }
+        #iss_upload_link:hover, #iss_artist_commentary:hover { background-color: #f7f7f7; }
+        #iss_hashes { display: flex; flex-direction: column; gap: 5px; }
+        .iss_image_link { color: #888 !important; }
+    `);
+    
+    // Use a MutationObserver to detect navigation changes.
+    let lastUrl = ''; 
+    new MutationObserver(() => {
+        const url = location.href;
+        if (url !== lastUrl) {
+            lastUrl = url;
+            // A brief delay helps ensure the old page content is gone before we run on the new one
+            setTimeout(find_site, 500);
+        }
+    }).observe(document.body, { subtree: true, childList: true });
 
-function do_upload () {
-	const gallery_url = document.querySelectorAll('a[href^="/en/users"]')[1].href;
-
-	const images = get_images();
-	for (let i = 0; i < images.length; i++) {
-		const image = images[i];
-
-		const button = upload_button(
-			image.best_url,
-			[
-				window.location.href,
-				image.best_url,
-				gallery_url
-			],
-			get_description(),
-			document.querySelector('[title="Posting date"]').textContent.match(/\b\d{4}\b/)[0]
-		);
-
-		image.container.appendChild(button);
-	}
-}
-
-function get_images () {
-	return Array.from(document.querySelectorAll('main div[role="presentation"] > a'))
-		.map(e => ({
-			container: e.parentNode.parentNode,
-			link: e
-		}))
-		// Find some way to filter out bad images such
-		// as animations. Currently the script will just
-		// break and I guess that is okay.
-		.map(e => ({
-			...e,
-			best_url: e.link.href,
-			preview_url: e.link.href
-				.replace('/img-original/', '/img-master/')
-				.replace(/.(png|jpg)$/u, '_master1200.jpg')
-		}));
-}
-
-function do_commentary () {
-	const container = document.querySelector('h1').parentNode;
-	const button = commentary_button(get_description());
-	container.insertBefore(button, container.querySelector('footer'));
-}
-
-async function conditional_execute (key, func) {
-	const value = await get_value(key);
-	if (value === true) {
-		func();
-	}
+    // Initial run for the first page load
+    find_site();
 }
 
 module.exports = {
-	...header,
-	exec: exec
+    ...header,
+    exec: exec
 };
+
 
 },{"./../../utils/utils.js":52,"./header.js":33}],35:[function(require,module,exports){
 module.exports = {
@@ -4177,11 +4144,13 @@ module.exports = {
 module.exports = {
 	test: (url) => {
 		const this_url = url.hostname.split('.').slice(-2).join('.');
-		return this_url === 'twitter.com';
+		// Now checks for either domain
+		return this_url === 'twitter.com' || this_url === 'x.com';
 	},
 
 	match: [
-		'*://*.twitter.com/*'
+		'*://*.twitter.com/*',
+		'*://*.x.com/*' // Added this line
 	],
 
 	connect: ['pbs.twimg.com'],
@@ -4194,164 +4163,167 @@ module.exports = {
 const { remove_node, simple_site, append } = require('./../../utils/utils.js');
 const header = require('./header.js');
 
-// Twitter actually has a different site for people not logged in
-// There *should* be a case where this is handled, but I am just going
-// to leave that out and hope that twitter will force the new site
-// design on everyone soon. Worst case, users of this can simply
-// make a twitter account for this to work. (I'm sorry this is a bad solution)
+// This function will run when a tweet is detected on the page.
+async function run_tweet_logic() {
+    // --- Determine Context: Are we in the main view or the photo viewer? ---
+    const photo_dialog = document.querySelector('div[role="dialog"]');
+    let tweet_article;
 
-async function photo_hashes () {
-	const info = await build_info();
+    if (photo_dialog) {
+        // In photo view, the relevant tweet is inside the sidebar of the dialog
+        tweet_article = await photo_dialog.arrive('article[data-testid="tweet"]');
+    } else {
+        // In main view, it's in the primary content column
+        const primaryColumn = await document.body.arrive('[data-testid="primaryColumn"]');
+        tweet_article = await primaryColumn.arrive('article[data-testid="tweet"]');
+    }
 
-	// Because of the async nature of stuff, a user might
-	// have gone through things rather quickly. This will
-	// make sure that there is always a clean slate
-	clear_all_setup();
+    if (!tweet_article) {
+        console.log('ISS (Twitter): Could not find the main tweet article. Stopping.');
+        return;
+    }
 
-	const quick_buttons = document.querySelector('[aria-label$=Reply]')
-		.parentNode
-		.parentNode;
-	quick_buttons.querySelector('div ~ div ~ div ~ div').style.flexGrow = 1;
+    // --- 1. Find the necessary elements within the correct context ---
+    const user_info_element = tweet_article.querySelector('[data-testid="User-Name"]');
+    if (!user_info_element) {
+        console.log('ISS (Twitter): Could not find User-Name element. Stopping.');
+        return;
+    }
+    
+    const artist_element = {
+        href: user_info_element.querySelector('a[role="link"]').href,
+        textContent: user_info_element.querySelector('span > span').textContent
+    };
 
-	append(quick_buttons, info.upload);
-	append(document.body, info.hashes);
-	// I can not get the button when pressed to copy the description
-	// append(quick_buttons, info.description);
+    const description_element = tweet_article.querySelector('[data-testid="tweetText"]');
+    const time_element = tweet_article.querySelector('time');
+    
+    // The image will always be in the dialog if it's open
+    const image_element = photo_dialog 
+        ? photo_dialog.querySelector('img[src*="pbs.twimg.com"]')
+        : tweet_article.querySelector('[data-testid="tweetPhoto"] img');
+
+    if (!image_element) {
+        console.log('ISS (Twitter): No image found. Stopping.');
+        return;
+    }
+
+    // --- 2. Extract and format the data ---
+    const year = new Date(time_element.dateTime).getFullYear().toString();
+    const sources = produce_sources(image_element.src);
+    const info = await simple_site({
+        artist: artist_element,
+        title: null,
+        description: description_element,
+        year: year,
+        full_url: sources[0][0],
+        full_url_name: 'orig',
+        hashes: sources.slice(1),
+        css: `
+            #iss_hashes {
+                position: fixed; top: 0px; left: 0px; z-index: 3000; display: flex;
+                width: 100%; background-color: #000c; padding: 4px;
+                flex-wrap: wrap; gap: 10px; justify-content: center; color: white;
+            }
+            .iss_hash_span { margin: auto; }
+            .iss_image_link { margin-right: 0.5rem; color: #71767b !important; }
+
+            /* Styles for sidebar integration */
+            #iss_button_container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+                border-top: 1px solid rgb(47, 51, 54);
+                padding-top: 12px;
+            }
+            #iss_upload_link, #iss_artist_commentary {
+                color: #71767b; text-decoration: none; font-size: 14px;
+                padding: 8px; border-radius: 16px; text-align: center;
+                border: 1px solid rgb(83, 100, 113);
+                background-color: transparent;
+                cursor: pointer;
+            }
+             #iss_upload_link:hover, #iss_artist_commentary:hover {
+                background-color: rgba(239, 243, 244, 0.1);
+            }
+        `,
+        hashes_as_array: false
+    });
+
+    // --- 3. Add the UI elements to the page ---
+    clear_all_setup();
+
+    const ui_anchor = tweet_article.querySelector('[data-testid="tweetText"]');
+
+    if (ui_anchor) {
+        const button_container = document.createElement('div');
+        button_container.id = 'iss_button_container';
+        
+        append(button_container, info.upload);
+        append(button_container, info.description);
+        
+        ui_anchor.parentElement.insertBefore(button_container, ui_anchor.nextSibling);
+    } else {
+        console.log('ISS (Twitter): Could not find the tweet text to attach buttons.');
+    }
+
+    // Only show hashes when the photo viewer is open.
+    if (photo_dialog) {
+        append(document.body, info.hashes);
+    }
 }
 
-function exec () {
-	find_site();
-	window.addEventListener('locationchange', find_site);
+// Generates different quality versions of the image URL.
+function produce_sources(starting_url) {
+    const base_url = new URL(starting_url);
+    const format = base_url.searchParams.get('format') || 'jpg';
+    
+    const clean_url_base = `${base_url.origin}${base_url.pathname}.${format}`;
+    return [
+        [`${clean_url_base}?name=orig`, 'orig'],
+        [`${clean_url_base}?name=4096x4096`, '4096'],
+        [`${clean_url_base}?name=large`, 'large']
+    ];
 }
 
-async function get_sources () {
-	const image_node = await (async () => {
-		// Apparently some posts will be weird and not have a single ul element
-		// on the page at all. Here is an example link that showcases this behavior.
-		// No idea how well this will hold up in the future with changes to twitter,
-		// but on the two test cases I tried, it worked!
-		// https://twitter.com/xzorgothoth/status/1376220068711923720
-		if (document.querySelector('ul') === null) {
-			const image_node = await document.getElementById('react-root').arrive('div[role=dialog] img');
-			document.getElementById('react-root').forget_arrives();
-			return image_node;
-		} else {
-			const image_id = parseInt((/\d+$/).exec(window.location.href)[0], 10);
-			const list_elems = new Array(image_id).fill('li').join(' ~ ');
-			const query = `ul[role=list] > ${list_elems} img`;
+// Checks the URL to decide if the script should run.
+function find_site() {
+    const tweet_regex = /^\/[A-z0-9_]+\/status\/\d+/;
+    const here = new URL(window.location.href);
 
-			// The structure for displaying multiple images and single
-			// images is different. This attempt to find each style and
-			// then return the first one that is found. The other's event
-			// listeners are then discarded and those promises are left
-			// never resolving. Perhaps this is not the best idea.
-			const image_node = await Promise.race([
-				// Specific image
-				document.getElementById('react-root').arrive(query),
-
-				// Single image
-				document.getElementById('react-root').arrive('div > div > div > div > div > img[alt=Image]')
-			]);
-			document.getElementById('react-root').forget_arrives();
-			return image_node;
-		}
-	})();
-	const all_sources = produce_sources(image_node.src);
-	return all_sources;
+    if (tweet_regex.test(here.pathname)) {
+        console.log('ISS: Twitter status URL detected');
+        // A short delay helps ensure the tweet content is fully loaded.
+        setTimeout(run_tweet_logic, 500);
+    }
 }
 
-function produce_sources (starting_url) {
-	return [
-		[url_type('orig'), 'full '],
-		[url_type('4096x4096'), '4096 '],
-		[url_type('large'), 'large ']
-	];
-
-	function url_type (new_type) {
-		const url = new URL(starting_url);
-		url.searchParams.set('name', new_type);
-		return url.href;
-	}
+// Removes old UI elements to prevent duplication.
+function clear_all_setup() {
+    remove_node(document.getElementById('iss_hashes'));
+    const old_container = document.querySelector('#iss_button_container');
+    if (old_container) remove_node(old_container);
 }
 
-function find_site () {
-	const status = /^\/[A-z0-9_]+\/status\/\d+$/;
-	const photo = /^\/[A-z0-9_]+\/status\/\d+\/photo\/\d$/;
+// Main Execution
+function exec() {
+    // Initial run when the page loads.
+    find_site();
+    // Re-run whenever the URL changes (for single-page app navigation).
+    window.addEventListener('locationchange', find_site);
 
-	clear_all_setup();
-
-	const here = new URL(window.location.href);
-	if (status.test(here.pathname)) {
-		console.log('ISS: Status URL detected');
-		// links to upload all images
-		// copy description
-	} else if (photo.test(here.pathname)) {
-		console.log('ISS: Photo URL detected');
-		photo_hashes();
-	}
+    // Set up a listener that watches the entire page for changes.
+    // This is how we'll know when the photo viewer opens or closes.
+    const observer = new MutationObserver(() => find_site());
+    observer.observe(document.body, { childList: true, subtree: true });
 }
-
-function clear_all_setup () {
-	remove_node(document.getElementById('iss_hashes'));
-	remove_node(document.getElementById('iss_upload_link'));
-}
-
-async function build_info () {
-	const artist = await document.body.arrive('[data-testid=tweet] [dir=ltr] > span');
-	// This should always be present if using the site normally
-	// when launched from a  direct photo url, the top tweet
-	// isn't actually present! This causes some problems, so saying
-	// it is empty is a lot better
-
-	// Pray that twitter doesn't change this, yet again, so I don't have the whole thing break.
-	const description = document.querySelector('[data-testid=tweet] > div > div > div > div ~ div ~ div [dir=auto]');
-	const sources = await get_sources();
-	// TODO: Clean this query up
-	// TODO: Write to twitter to clean their site up
-	const date = await document.body.arrive(`[data-testid=tweet] > div > div > div > div ~ div ~ div a[href="${window.location.pathname.split('/').splice(0, 4).join('/')}"`);
-	const year = date.textContent.slice(-4);
-
-	return get_info({
-		artist: artist,
-		description: description,
-		year: year,
-		sources: sources
-	});
-}
-
-const get_info = async (pre_found) => simple_site({
-	artist: pre_found.artist,
-	title: null, // No titles on twitter
-	description: pre_found.description,
-	year: pre_found.year,
-	full_url: pre_found.sources[0][0],
-	full_url_name: 'orig',
-	hashes: pre_found.sources.slice(1),
-	css: `
-		#iss_hashes {
-			position: fixed;
-			top: 0px;
-			z-index: 3000;
-			display: flex;
-			width: 100%;
-			background-color: #0006;
-			flex-wrap: wrap;
-		}
-		.iss_hash_span { margin: auto; }
-		.iss_image_link { margin-right: 0.2rem; }
-
-		#iss_upload_link {
-			color: white;
-			margin: auto;
-		}
-	`,
-	hashes_as_array: false
-});
 
 module.exports = {
-	...header,
-	exec: exec
+    ...header,
+    exec: exec
 };
+
 
 },{"./../../utils/utils.js":52,"./header.js":39}],41:[function(require,module,exports){
 module.exports = {

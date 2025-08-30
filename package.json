@@ -9,14 +9,14 @@
 	"license": "UNLICENSE",
 	"private": true,
 	"devDependencies": {
-		"eslint": "^6.8.0",
+		"browserify": "^16.5.0",
+		"eslint": "^9.34.0",
 		"eslint-config-standard": "^14.1.0",
 		"eslint-plugin-import": "^2.20.1",
 		"eslint-plugin-node": "^11.0.0",
 		"eslint-plugin-promise": "^4.2.1",
 		"eslint-plugin-standard": "^4.0.1",
-		"browserify": "^16.5.0",
-		"stringify": "^5.2.0"
+		"stringify": "^2.2.0"
 	},
 	"eslintConfig": {
 		"extends": "standard",
@@ -45,7 +45,6 @@
 			"camelcase": "off"
 		}
 	},
-	"dependencies": {},
 	"main": "main.js",
 	"eslintIgnore": [
 		"distribution/*"

@@ -4,7 +4,8 @@ const { full_to_thumb } = require('./links.js');
 const get_info = async (full_url) => simple_site({
 	artist: {
 		href: document.querySelector('.submission-id-avatar > a').href,
-		textContent: document.querySelector('.submission-id-sub-container a > strong').textContent
+		// This is the corrected line from the GitHub issue
+		textContent: document.querySelector('.submission-id-sub-container a > span').textContent
 	},
 	title: document.querySelector('.submission-title > h2'),
 	description: () => document.querySelector('.submission-description'),
@@ -27,15 +28,16 @@ const get_info = async (full_url) => simple_site({
 });
 
 async function exec () {
-	// There seem to be two different display modes for the beta site
-	// This code only works on the wide version because in the thin
-	// view, the place where the container is placed disappears. This
-	// seems like it is only done with css because the node will come
-	// back if the window is stretched to fit again.
+	// Find the download button.
+	const downloadButton = document.querySelector('a.button[href*="d.furaffinity.net/art/"]');
 
-	// It appears that you can only be on the beta site while logged
-	// in. This does not concern me about this node being hidden
-	const full_url = document.querySelector('a.button[href*="d.furaffinity.net/art/"]').href;
+	// If there's no download button, it's not an image submission. Stop here.
+	if (!downloadButton) {
+		console.log("ISS: FurAffinity plan stopping. No image download button found.");
+		return;
+	}
+
+	const full_url = downloadButton.href;
 	const info = await get_info(full_url);
 
 	const container = document.createElement('div');
@@ -55,3 +57,4 @@ async function exec () {
 }
 
 module.exports = exec;
+

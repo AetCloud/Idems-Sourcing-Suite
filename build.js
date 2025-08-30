@@ -25,7 +25,7 @@ function bundle (header_string) {
 
 function build_header () {
 	return `// ==UserScript==
-// @name         Idem's Sourcing Suite
+// @name         Idem's Sourcing Suite - Dev
 // @description  Adds a whole bunch of utilities, helpful for sourcing images
 // @version      ${get_version()}
 // @author       ${info.authors}
