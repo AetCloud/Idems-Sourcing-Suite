@@ -22,11 +22,10 @@ async function find_site (version) {
 }
 
 async function exec () {
-    // --- START: CORRECTED LOGIC ---
     const here = new URL(window.location.href);
 
-    // FIRST, check if this is the OAuth callback URL.
-    if (here.hostname === '127.0.0.1' && here.pathname === '/deviantart-callback') {
+    // Check if this is one of the OAuth callback URLs.
+    if ((here.hostname === 'aetcloud.github.io' || here.hostname === 'n4.ppstar.art') && here.pathname.includes('/Idems-Sourcing-Suite/callback.html')) {
         const auth_code = here.searchParams.get('code');
         if (auth_code) {
             eclipse.handle_callback(auth_code);
@@ -35,7 +34,6 @@ async function exec () {
         }
         return; // Stop further execution.
     }
-    // --- END: CORRECTED LOGIC ---
 
     // If it's not the callback, proceed with normal page logic.
 	const is_old = document.getElementById('oh-menu-eclipse-toggle');
@@ -48,7 +46,7 @@ async function exec () {
 	}
 
 	version.init();
-	find_site(version); // Pass the correct version to find_site
+	find_site(version);
 	window.addEventListener('locationchange', () => find_site(version));
 }
 

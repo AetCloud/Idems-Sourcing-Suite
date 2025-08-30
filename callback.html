@@ -3,20 +3,27 @@
 <head>
     <title>Idem's Sourcing Suite - DA Auth</title>
     <script>
-        // This script runs when DeviantArt redirects back to this page.
-        // It grabs the authorization code from the URL.
-        const code = new URLSearchParams(window.location.search).get('code');
+        // Wait for the DOM to be fully loaded before running the script
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // This script runs when DeviantArt redirects back to this page.
+            // It grabs the authorization code from the URL.
+            const code = new URLSearchParams(window.location.search).get('code');
 
-        // It then saves the code in the browser's local storage.
-        if (code) {
-            localStorage.setItem('deviantart_auth_code', code);
-            document.getElementById('message').textContent = 'Authorization successful! You can close this tab and return to DeviantArt.';
-        } else {
-            document.getElementById('message').textContent = 'Error: Authorization code not found.';
-        }
+            // It then saves the code in the browser's local storage.
+            if (code) {
+                localStorage.setItem('deviantart_auth_code', code);
+                document.getElementById('message').textContent = 'Authorization successful! You can close this tab and return to DeviantArt.';
+            } else {
+                const error = new URLSearchParams(window.location.search).get('error_description');
+                document.getElementById('message').textContent = `Error: ${error || 'Authorization code not found.'}`;
+            }
 
-        // The tab can be closed.
-        window.close();
+            // The tab can be closed.
+            // A small delay gives the user a chance to see the message.
+            setTimeout(() => {
+                window.close();
+            }, 3000); // Closes after 3 seconds
+        });
     </script>
 </head>
 <body>

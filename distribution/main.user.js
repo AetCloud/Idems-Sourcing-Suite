@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Idem's Sourcing Suite - Dev
 // @description  Adds a whole bunch of utilities, helpful for sourcing images
-// @version      1.00055
+// @version      1.00057
 // @author       Meras
 
 // @namespace    https://github.com/Sasquire/
@@ -28,8 +28,10 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addElement
 
-//               DeviantArt v8
+//               DeviantArt v10
 // @match        *://*.deviantart.com/*
+// @match        https://aetcloud.github.io/Idems-Sourcing-Suite/callback.html*
+// @match        https://n4.ppstar.art/Idems-Sourcing-Suite/callback.html*
 // @connect      wixmp.com
 // @connect      www.deviantart.com
 
@@ -2670,7 +2672,7 @@ const {
 	common_styles,
 	remove_node,
 	get_value,
-    set_value, // Use the correct utility function
+    set_value,
 	add_css,
     append
 } = require('./../../utils/utils.js');
@@ -2678,9 +2680,8 @@ const {
 const OAUTH_URL = 'https://www.deviantart.com/oauth2/authorize';
 const TOKEN_URL = 'https://www.deviantart.com/oauth2/token';
 const API_BASE_URL = 'https://www.deviantart.com/api/v1/oauth2';
-const REDIRECT_URI = 'https://aetcloud.github.io//Idems-Sourcing-Suite/callback.html';
+const REDIRECT_URI = 'https://aetcloud.github.io/Idems-Sourcing-Suite/callback.html';
 
-// --- Helper function to start the authorization process ---
 async function authorize() {
     const client_id = await get_value('deviantart_client_id');
     if (!client_id) {
@@ -2693,72 +2694,57 @@ async function authorize() {
         redirect_uri: REDIRECT_URI,
         scope: 'browse'
     });
-    // Open the authorization page in a new tab
-    window.open(`${OAUTH_URL}?${params.toString()}`);
+    window.location.href = `${OAUTH_URL}?${params.toString()}`;
 }
 
-// --- Helper function to get the access token ---
 async function get_token(auth_code) {
     const client_id = await get_value('deviantart_client_id');
     const client_secret = await get_value('deviantart_client_secret');
-
     const params = new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: client_id,
-        client_secret: client_secret,
+        client_id,
+        client_secret,
         redirect_uri: REDIRECT_URI,
         code: auth_code
     });
-
     try {
-        const response = await fetch(TOKEN_URL, {
-            method: 'POST',
-            body: params
-        });
+        const response = await fetch(TOKEN_URL, { method: 'POST', body: params });
         const data = await response.json();
         if (data.access_token) {
             await set_value('deviantart_access_token', data.access_token);
-            // Clear the used auth code from local storage
             localStorage.removeItem('deviantart_auth_code');
             alert('DeviantArt authorization successful!');
-            window.location.reload(); // Reload the page to use the new token
-            return data.access_token;
+            window.location.reload();
         } else {
             throw new Error(data.error_description || 'Failed to get access token.');
         }
     } catch (error) {
         console.error("ISS (DeviantArt): Error getting access token.", error);
         alert(`DeviantArt authorization failed: ${error.message}`);
-        return null;
     }
 }
 
-// --- Main execution logic ---
 async function run_artwork () {
 	clear_all_setup();
-
-    // --- NEW: Check local storage for an auth code from our callback page ---
     const auth_code = localStorage.getItem('deviantart_auth_code');
     if (auth_code) {
         await get_token(auth_code);
-        return; // Stop execution to allow the page to reload
+        return;
     }
-
 	const access_token = await get_value('deviantart_access_token');
     if (!access_token) {
-        authorize(); // If we don't have a token, start the auth process.
+        authorize();
         return;
     }
 
-	const deviation_uuid = await get_deviation_uuid(window.location.href, access_token);
+    const deviation_uuid = await get_deviation_uuid_from_page();
     if (!deviation_uuid) {
-        console.error("ISS (DeviantArt): Could not retrieve deviation UUID.");
+        console.error("ISS (DeviantArt): Could not find deviation UUID on the page.");
         return;
     }
 
 	const info = await get_info(deviation_uuid, access_token);
     if (!info) {
-        console.error("ISS (DeviantArt): Failed to get artwork info.");
         return;
     }
 
@@ -2794,22 +2780,32 @@ function clear_all_setup () {
 	remove_node(document.getElementById('iss_container'));
 }
 
-async function get_deviation_uuid(url, access_token) {
-    const params = new URLSearchParams({ url, access_token });
-    const response = await fetch(`${API_BASE_URL}/oembed?${params.toString()}`);
-    const data = await response.json();
-    return data.deviationid;
+async function get_deviation_uuid_from_page() {
+    // Find the embedded JSON data script tag
+    const scriptTag = await document.body.arrive('script[type="application/ld+json"]');
+    if (!scriptTag) return null;
+    
+    try {
+        const jsonData = JSON.parse(scriptTag.textContent);
+        const url = jsonData.mainEntity['@id'] || jsonData.mainEntity.url;
+        // The UUID is the last part of the URL path
+        const uuid = url.split('-').pop();
+        return uuid;
+    } catch (e) {
+        console.error("ISS (DeviantArt): Failed to parse embedded JSON-LD data.", e);
+        return null;
+    }
 }
 
 async function get_info(deviation_uuid, access_token) {
-    const params = new URLSearchParams({ access_token, "expand": "user,submission.description" });
-    const API_URL = `${API_BASE_URL}/deviation/metadata/${deviation_uuid}?${params.toString()}`;
+    // The official API uses a different endpoint for metadata
+    const params = new URLSearchParams({ access_token });
+    const API_URL = `${API_BASE_URL}/deviation/${deviation_uuid}?${params.toString()}`;
 
     try {
         const response = await fetch(API_URL);
         if (!response.ok) {
-            // If the token is invalid, clear it and re-authorize
-            if (response.status === 401) {
+            if (response.status === 401) { // Unauthorized
                 console.log("ISS (DeviantArt): Access token is invalid or expired. Re-authorizing...");
                 await set_value('deviantart_access_token', null);
                 authorize();
@@ -2819,11 +2815,10 @@ async function get_info(deviation_uuid, access_token) {
         }
         
         const data = await response.json();
-        const deviation = data.metadata[0];
         
         return {
-            sources: get_sources(deviation),
-            description: get_description(deviation)
+            sources: get_sources(data),
+            description: get_description(data)
         };
     } catch (error) {
         console.error("ISS (DeviantArt): Error fetching from metadata API.", error);
@@ -2831,49 +2826,57 @@ async function get_info(deviation_uuid, access_token) {
     }
 }
 
-function get_description(deviation) {
+function get_description(data) {
     const artist = {
-        href: deviation.author.url,
-        textContent: deviation.author.username
+        href: data.author.url,
+        textContent: data.author.username
     };
-    const title = { textContent: deviation.title };
-    const description = string_to_node(deviation.description);
-
-    return artist_commentary(artist, title, description);
+    const title = { textContent: data.title };
+    // The description is in a separate API call in the new system, so we get it from the page
+    const description_node = document.querySelector('[data-hook=description]');
+    return artist_commentary(artist, title, description_node);
 }
 
-function get_sources(deviation) {
+function get_sources(data) {
     const sources = [];
-    if (deviation.submission.content.src) {
-        sources.push([deviation.submission.content.src, 'full image']);
+    if (data.content.src) {
+        sources.push([data.content.src, 'full image']);
     }
-    if (deviation.submission.preview.src) {
-        sources.push([deviation.submission.preview.src, 'preview']);
+    // The official API response structure is different
+    if (data.thumbs && data.thumbs.length > 0) {
+        // Find the largest thumbnail as a preview
+        const largest_thumb = data.thumbs.reduce((prev, current) => (prev.width > current.width) ? prev : current);
+        sources.push([largest_thumb.src, 'preview']);
     }
     return sources;
 }
 
-
 module.exports = {
 	init: add_style,
 	exec: run_artwork,
-    handle_callback: get_token // Export the callback handler
+    handle_callback: get_token
 };
 },{"./../../utils/utils.js":52,"./shared.js":17}],14:[function(require,module,exports){
 module.exports = {
 	test: (url) => {
+        // Test for deviantart.com OR either of the callback pages
 		const this_url = url.hostname.split('.').slice(-2).join('.');
-		return this_url === 'deviantart.com';
+		return this_url === 'deviantart.com' || url.hostname === 'aetcloud.github.io' || url.hostname === 'n4.ppstar.art';
 	},
 
 	match: [
-        '*://*.deviantart.com/*'
+        '*://*.deviantart.com/*',
+        'https://aetcloud.github.io/Idems-Sourcing-Suite/callback.html*',
+        'https://n4.ppstar.art/Idems-Sourcing-Suite/callback.html*'
     ],
 
-	connect: ['wixmp.com', 'www.deviantart.com'],
+	connect: [
+        'wixmp.com',
+        'www.deviantart.com'
+    ],
 
 	title: 'DeviantArt',
-	version: 8 // Incremented version
+	version: 10 // Incremented version
 };
 },{}],15:[function(require,module,exports){
 const old = require('./old.js');
@@ -2900,11 +2903,10 @@ async function find_site (version) {
 }
 
 async function exec () {
-    // --- START: CORRECTED LOGIC ---
     const here = new URL(window.location.href);
 
-    // FIRST, check if this is the OAuth callback URL.
-    if (here.hostname === '127.0.0.1' && here.pathname === '/deviantart-callback') {
+    // Check if this is one of the OAuth callback URLs.
+    if ((here.hostname === 'aetcloud.github.io' || here.hostname === 'n4.ppstar.art') && here.pathname.includes('/Idems-Sourcing-Suite/callback.html')) {
         const auth_code = here.searchParams.get('code');
         if (auth_code) {
             eclipse.handle_callback(auth_code);
@@ -2913,7 +2915,6 @@ async function exec () {
         }
         return; // Stop further execution.
     }
-    // --- END: CORRECTED LOGIC ---
 
     // If it's not the callback, proceed with normal page logic.
 	const is_old = document.getElementById('oh-menu-eclipse-toggle');
@@ -2926,7 +2927,7 @@ async function exec () {
 	}
 
 	version.init();
-	find_site(version); // Pass the correct version to find_site
+	find_site(version);
 	window.addEventListener('locationchange', () => find_site(version));
 }
 
