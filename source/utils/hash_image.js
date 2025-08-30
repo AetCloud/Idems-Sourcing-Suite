@@ -30,7 +30,8 @@ async function md5_blob (blob) {
 async function hash_url (url, headers = {}) {
 	const url_ = new URL(url);
 	if (url_.host === 'i.pximg.net') {
-		headers.referer = window.location.href;
+		// This is the crucial part: we must set the Referer to pixiv.net
+		headers.referer = 'https://www.pixiv.net/';
 	}
 
 	return download_image(url, headers).then(md5_blob);

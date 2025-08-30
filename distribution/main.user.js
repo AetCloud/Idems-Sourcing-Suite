@@ -3769,7 +3769,8 @@ module.exports = {
 },{}],34:[function(require,module,exports){
 const header = require('./header.js');
 const {
-	artist_commentary,
+	commentary_from_text,
+	node_to_dtext,
 	commentary_button,
 	data_to_span,
 	common_styles,
@@ -3780,51 +3781,91 @@ const {
     append
 } = require('./../../utils/utils.js');
 
+let isRunning = false; // Add a lock to prevent the function from running multiple times
+
 // This function will run when the script detects an artwork page.
 async function run_artwork_logic() {
+    if (isRunning) {
+        console.log("ISS (Pixiv): Artwork logic is already running.");
+        return;
+    }
+    isRunning = true;
+    console.log("ISS (Pixiv): Starting artwork logic...");
     clear_all_setup();
 
-    // Wait for both the main content AND the sidebar artist link. This prevents race conditions on refresh.
-    const [figcaption, artist_element] = await Promise.all([
-        document.body.arrive('main figure figcaption'),
-        document.body.arrive('aside a[data-gtm-value][href*="/users/"]')
-    ]);
+    try {
+        // Wait for the container that holds both the figure and figcaption
+        const artworkContainer = await document.body.arrive('main .sc-f473edfb-1');
+        if (!artworkContainer) {
+            isRunning = false; // Release lock
+            return;
+        }
 
-    if (!figcaption || !artist_element) {
-        console.log("ISS (Pixiv): Timed out waiting for essential elements. Stopping.");
-        return;
+        // Now, find the figcaption and artist element
+        const [figcaption, artist_element] = await Promise.all([
+            artworkContainer.arrive('figcaption'),
+            document.body.arrive('aside a[data-gtm-value][href*="/users/"]')
+        ]);
+
+        if (!figcaption || !artist_element) {
+            isRunning = false; // Release lock
+            return;
+        }
+        
+        // Find the main content container within the figcaption
+        const contentContainer = figcaption.querySelector('div[class*="sc-d4cbc2e2"]');
+        if (!contentContainer) {
+            isRunning = false; // Release lock
+            return;
+        }
+
+        // Use more robust selectors
+        const description_element = contentContainer.querySelector('[id^="expandable-paragraph"]');
+        
+        if (!description_element) {
+            isRunning = false; // Release lock
+            return;
+        }
+        
+        const date_element = figcaption.querySelector('time[datetime]');
+        const ui_anchor = figcaption.querySelector('footer');
+
+        if (!date_element || !ui_anchor) {
+            isRunning = false; // Release lock
+            return;
+        }
+        
+        const year = new Date(date_element.dateTime).getFullYear().toString();
+        
+        // Use document.title for the commentary title as a fallback
+        const title_text = document.title.split('/')[1].trim() || "Untitled";
+        const description_dtext = node_to_dtext(description_element);
+        const commentary = commentary_from_text(artist_element.textContent, artist_element.href, title_text, description_dtext);
+        
+        const sources = get_sources();
+
+        if (sources.length === 0) {
+            isRunning = false; // Release lock
+            return;
+        }
+
+        const info = await get_value_object(commentary, artist_element.href, [year], sources);
+
+        const button_container = document.createElement('div');
+        button_container.id = 'iss_button_container';
+        
+        append(button_container, info.upload);
+        append(button_container, info.description);
+        append(button_container, info.hashes);
+
+        ui_anchor.parentElement.insertBefore(button_container, ui_anchor);
+        console.log("ISS (Pixiv): Artwork logic finished successfully.");
+
+    } catch (error) {
+        console.error("ISS (Pixiv): An unexpected error occurred in run_artwork_logic.", error);
+    } finally {
+        isRunning = false; // Release lock
     }
-    
-    // Now that we know the core components are loaded, we can safely find the rest.
-    const title_element = figcaption.querySelector('h1');
-    const description_element = figcaption.querySelector('.sc-d4cbc2e2-0'); // The div containing the caption
-    const date_element = figcaption.querySelector('time[datetime]');
-    const ui_anchor = figcaption.querySelector('footer');
-
-    if (!title_element || !date_element || !ui_anchor) {
-        console.log("ISS (Pixiv): Missing elements within the figcaption. Stopping.");
-        return;
-    }
-    
-    const year = new Date(date_element.dateTime).getFullYear().toString();
-    const commentary = artist_commentary(artist_element, title_element, description_element);
-    const sources = get_sources();
-
-    if (sources.length === 0) {
-        console.log("ISS (Pixiv): No image sources found. Stopping.");
-        return;
-    }
-
-    const info = await get_value_object(commentary, artist_element.href, [year], sources);
-
-    const button_container = document.createElement('div');
-    button_container.id = 'iss_button_container';
-    
-    append(button_container, info.upload);
-    append(button_container, info.description);
-    append(button_container, info.hashes);
-
-    ui_anchor.parentElement.insertBefore(button_container, ui_anchor);
 }
 
 // Helper to build the object for the UI elements
@@ -3842,21 +3883,19 @@ async function get_value_object(commentary, artist_url, tags = [], sources) {
 
 // Finds all image sources.
 function get_sources() {
-    const images = Array.from(document.querySelectorAll('main [role="presentation"] img'));
+    // Correctly target the link that wraps the image, as it contains the direct URL to the original file
+    const image_links = Array.from(document.querySelectorAll('main [role="presentation"] a[href*="i.pximg.net/img-original"]'));
     
-    return images.map((img, i) => {
-        // Reconstruct the original image URL from the thumbnail/master URL
-        let hires_url = img.src.replace('i.pximg.net/c/250x250_80_a2/img-master/', 'i.pximg.net/img-original/');
-        hires_url = hires_url.replace(/_master\d+\./, '.').replace(/_square\d+\./,'.');
-        return [hires_url, `Image ${i+1}`];
+    return image_links.map((link, i) => {
+        return [link.href, `Image ${i+1}`];
     });
 }
+
 
 // Checks if the current URL is an artwork page.
 function find_site() {
     const artworks = /^\/en\/artworks\/\d+/;
     if (artworks.test(window.location.pathname)) {
-        console.log('ISS: Pixiv artwork URL detected');
         run_artwork_logic();
     } else {
         clear_all_setup();
@@ -3899,8 +3938,6 @@ module.exports = {
     ...header,
     exec: exec
 };
-
-
 },{"./../../utils/utils.js":52,"./header.js":33}],35:[function(require,module,exports){
 module.exports = {
 	test: (url) => {
@@ -4519,7 +4556,8 @@ async function md5_blob (blob) {
 async function hash_url (url, headers = {}) {
 	const url_ = new URL(url);
 	if (url_.host === 'i.pximg.net') {
-		headers.referer = window.location.href;
+		// This is the crucial part: we must set the Referer to pixiv.net
+		headers.referer = 'https://www.pixiv.net/';
 	}
 
 	return download_image(url, headers).then(md5_blob);
@@ -4668,7 +4706,6 @@ module.exports = {
 	data_to_span: data_to_span,
 	e621_lookup_hash: e621_lookup_hash
 };
-
 },{"./../../dependencies/gm_functions.js":4,"./../../dependencies/md5.js":5,"./e621_api.js":44}],47:[function(require,module,exports){
 const { safe_link } = require('./safe_link.js');
 
