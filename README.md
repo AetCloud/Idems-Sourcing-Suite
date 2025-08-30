@@ -1,6 +1,8 @@
 # Idem's Sourcing Suite
 
-### [Install](https://raw.githubusercontent.com/Sasquire/Idems-Sourcing-Suite/master/distribution/main.user.js)
+## Disclaimer: This is a fork of Idem's Sourcing Suite. Click [this](https://github.com/Sasquire/Idems-Sourcing-Suite), or the link under the project's name to go to the original project.
+
+### [Install](https://github.com/AetCloud/Idems-Sourcing-Suite/blob/a7482c105b6b5722f923a26931fe7f5569a03d8f/distribution/main.user.js)
 You must have a [userscript manager](https://greasyfork.org/en) to run this program.
 
 ### [Examples](https://imgur.com/a/R96CNCz)
